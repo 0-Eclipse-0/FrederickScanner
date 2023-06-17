@@ -6,7 +6,7 @@ import twint
 import nest_asyncio
 from io import StringIO
 
-welcome_msg = """\033[1m
+WELCOME_MSG = """\033[1m
 
            ,▄███▀▀▀▀███▄,
         ▄█▀▀¬          '╙▀█▄
@@ -45,16 +45,14 @@ def signal_handler(sig, frame):
     print("\r[Scanner] Exitting...", ' '*14)
     sys.exit(0)
 
-signal.signal(signal.SIGINT, signal_handler)
+def format_tweets(t):
+    t = re.findall(r'<FredScanner>.*', t)
+    t = '\n────────────────────────────────────\n'.join(t)
+    t = re.sub(r'\s\s-\s.*', "", t)
+    t = re.sub("<FredScanner>", "[Scanner]", t)
+    return t
 
-if os.name == 'nt':
-    os.system("mode con:cols=36 lines=40 & title Scanner & color 06 & cls")
-else:
-    os.system("clear;printf '\\033[8;40;36t'")
-
-print(welcome_msg)
-
-def merry_christmas():
+def merry_christmas(o):
     santa = """
               ____
            {} _  \\
@@ -75,9 +73,19 @@ def merry_christmas():
           _|   /_|   /
          (___,_(___,_)
           """
-    print(santa)
-    print("\rMerry Christmas Hambones...")
-    sys.exit(0)
+    secret = input()
+    if secret == "50":
+        print("\n"*40)
+        print(santa)
+        print("\r    Merry Christmas Hambones...")
+        print("           and Happy 50th      ")
+        print(" I made this because you're always\n     wondering what's going on\n\toutside of the house")
+        print("\n"*10)
+        sys.stdout = None
+        _thread.interrupt_main()
+    else:
+        _thread.interrupt_main()
+
 
 def loading_bar(stime):
     i=1
@@ -95,12 +103,12 @@ def loading_bar(stime):
 
 def tweets(o):
     time.sleep(9)
-    print("[Scanner] Loading feed...")
+    print("[Scanner] Loading feed...   ")
     loading_bar(3)
     t.Username = "FredScanner"
-    now = datetime.today() - timedelta(hours=0, minutes=30)
+    now = datetime.today() - timedelta(hours=1, minutes=0)
     check_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    print('[Scanner] Feed loaded...   \n', end='')
+    # print('[Scanner] Feed loaded...   \n', end='')
     running = False
     while True:
         t.Since = check_time
@@ -112,11 +120,7 @@ def tweets(o):
         if running == False:
             print('─'*36)
             running = True
-        new_tweets = result.getvalue()
-        new_tweets = re.findall(r'<FredScanner>.*', new_tweets)
-        new_tweets = '\n────────────────────────────────────\n'.join(new_tweets)
-        new_tweets = re.sub(r'\s\s-\s.*', "", new_tweets)
-        new_tweets = re.sub("<FredScanner>", "[Scanner]", new_tweets)
+        new_tweets = format_tweets(result.getvalue())
         now = datetime.now()
         check_time = now.strftime("%Y-%m-%d %H:%M:%S")
         if new_tweets != '':
@@ -126,7 +130,7 @@ def tweets(o):
             print(f"\r Last Checked: {check_time}", end='')
         else:
             print(f"\r Last Checked: {check_time}", end='')
-        time.sleep(10)
+        time.sleep(60)
 
 
 def audio(source):
@@ -139,18 +143,28 @@ def audio(source):
     loading_bar(5)
 
     try:
-        with suppress_stdout():
-            scanner.play()
+        scanner.play()
     except Exception as e:
         sys.exit(f"[Error] {e}")
 
     print("\r[Scanner] Connected to scanner...")
 
-try:
-    _thread.start_new_thread( tweets, (None, ) )
-    _thread.start_new_thread( audio, ("https://broadcastify.cdnstream1.com/9809", ) )
-except:
-    sys.exit("[Error] Threading Failure")
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
 
-while True:
-    pass
+    if os.name == 'nt':
+        os.system("mode con:cols=36 lines=40 & title Scanner & color 06 & cls")
+    else:
+        os.system("clear;printf '\\033[8;40;36t'")
+
+    try:
+        print(WELCOME_MSG)
+        _thread.start_new_thread( tweets, (None, ) )
+        _thread.start_new_thread( audio, ("https://broadcastify.cdnstream1.com/9809", ) )
+        _thread.start_new_thread( merry_christmas, (None, ) )
+
+    except:
+        sys.exit("[Error] Threading Failure")
+
+    while True:
+        pass
